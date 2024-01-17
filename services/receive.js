@@ -88,8 +88,18 @@ module.exports = class Receive {
     // let greeting = this.firstEntity(event.message.nlp, "greetings");
     let message = event.message.text.trim().toLowerCase();
 
+    this.sendAction("mark_seen");
+    this.sendAction("typing_on");
+    let intervalId = setInterval(() => {
+      this.sendAction("typing_on");
+    }, 3000);
+
     Bot.chat(process.env.TENANT, this.user.psid, message).then(
       (botResponse) => {
+        console.log("Bot response", botResponse);
+        clearInterval(intervalId);
+        this.sendAction("typing_off");
+
         this.sendMessage(
           Response.genText(botResponse.data.assistant.content),
           this.isUserRef
@@ -391,6 +401,17 @@ module.exports = class Receive {
     // Mitigate restriction on Persona API
     // Persona API does not work for people in EU, until fixed is safer to not use
     delete requestBody["persona_id"];
+
+    setTimeout(() => GraphApi.callSendApi(requestBody), delay);
+  }
+
+  sendAction(action, delay = 0) {
+    let requestBody = {
+      recipient: {
+        id: this.user.psid
+      },
+      sender_action: action
+    };
 
     setTimeout(() => GraphApi.callSendApi(requestBody), delay);
   }
