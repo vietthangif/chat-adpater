@@ -1,0 +1,35 @@
+# fly.toml app configuration file generated for chat-adpater on 2024-01-17T19:04:55+07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "chat-adpater"
+primary_region = "sin"
+
+[build]
+
+[env]
+  PAGE_ID="201024796432047"
+  APP_ID="335591635068469"
+  PAGE_ACCESS_TOKEN="EAAExOAQypjUBO7XLfVdVTvnvZB23s7nEUuULJCMR8ZAIG3vI0UE7GyNuGZChdq6ZCdmwTO8woN9HcTSfJLBNrC5GZBfw6JJ23PJmlMEe8kzJtaMRQ5eqfyIZCWu8dZAmZBVljUB3fIAn3T9TtdZCZAKZBre5ZBzoWmpoMdGkp5hYJhmFg1O4GBK15NxYlSLl4GdqtZBleeZCZAKKIlWYh1up7Ib"
+  APP_SECRET="32ed90e4fe464b5693718d0982d80918"
+  VERIFY_TOKEN="abcdef"
+  APP_URL=""
+  SHOP_URL=""
+  PORT="3000"
+  TASKBOT_URL="https://taskbot-dev.fly.dev"
+  TENANT="64c69cc84fb7f29d00a79f4c"
+
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

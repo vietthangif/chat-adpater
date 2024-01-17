@@ -140,7 +140,7 @@ app.post("/webhook", (req, res) => {
                   console.log(JSON.stringify(body));
                   console.log("Profile is unavailable:", error);
                 })
-                .finally(() => {
+                .finally(async () => {
                   console.log("locale: " + user.locale);
                   users[senderPsid] = user;
                   i18n.setLocale("en_US");

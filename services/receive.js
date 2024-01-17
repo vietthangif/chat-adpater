@@ -18,7 +18,8 @@ const Curation = require("./curation"),
   Survey = require("./survey"),
   GraphApi = require("./graph-api"),
   i18n = require("../i18n.config"),
-  config = require("./config");
+  config = require("./config"),
+  Bot = require("./taskbot.js");
 
 module.exports = class Receive {
   constructor(user, webhookEvent, isUserRef) {
@@ -29,7 +30,7 @@ module.exports = class Receive {
 
   // Check if the event is a message or postback and
   // call the appropriate handler function
-  handleMessage() {
+  async handleMessage() {
     let event = this.webhookEvent;
 
     let responses;
@@ -43,7 +44,8 @@ module.exports = class Receive {
         } else if (message.attachments) {
           responses = this.handleAttachmentMessage();
         } else if (message.text) {
-          responses = this.handleTextMessage();
+          // responses = await this.handleTextMessage();
+          this.handleTextMessage();
         }
       } else if (event.postback) {
         responses = this.handlePostback();
@@ -62,70 +64,77 @@ module.exports = class Receive {
       };
     }
 
-    if (Array.isArray(responses)) {
-      let delay = 0;
-      for (let response of responses) {
-        this.sendMessage(response, delay * 2000, this.isUserRef);
-        delay++;
-      }
-    } else {
-      this.sendMessage(responses, this.isUserRef);
-    }
+    // if (Array.isArray(responses)) {
+    //   let delay = 0;
+    //   for (let response of responses) {
+    //     this.sendMessage(response, delay * 2000, this.isUserRef);
+    //     delay++;
+    //   }
+    // } else {
+    //   this.sendMessage(responses, this.isUserRef);
+    // }
   }
 
   // Handles messages events with text
-  handleTextMessage() {
+  async handleTextMessage() {
     console.log(
-      "Received text:",
+      "[Handle text message] Received text:",
       `${this.webhookEvent.message.text} for ${this.user.psid}`
     );
 
     let event = this.webhookEvent;
 
     // check greeting is here and is confident
-    let greeting = this.firstEntity(event.message.nlp, "greetings");
+    // let greeting = this.firstEntity(event.message.nlp, "greetings");
     let message = event.message.text.trim().toLowerCase();
 
-    let response;
+    Bot.chat(process.env.TENANT, this.user.psid, message).then(
+      (botResponse) => {
+        this.sendMessage(
+          Response.genText(botResponse.data.assistant.content),
+          this.isUserRef
+        );
+      }
+    );
 
-    if (
-      (greeting && greeting.confidence > 0.8) ||
-      message.includes("start over")
-    ) {
-      response = Response.genNuxMessage(this.user);
-    } else if (Number(message)) {
-      response = Order.handlePayload("ORDER_NUMBER");
-    } else if (message.includes("#")) {
-      response = Survey.handlePayload("CSAT_SUGGESTION");
-    } else if (message.includes(i18n.__("care.help").toLowerCase())) {
-      let care = new Care(this.user, this.webhookEvent);
-      response = care.handlePayload("CARE_HELP");
-    } else {
-      response = [
-        Response.genText(
-          i18n.__("fallback.any", {
-            message: event.message.text
-          })
-        ),
-        Response.genText(i18n.__("get_started.guidance")),
-        Response.genQuickReply(i18n.__("get_started.help"), [
-          {
-            title: i18n.__("menu.suggestion"),
-            payload: "CURATION"
-          },
-          {
-            title: i18n.__("menu.help"),
-            payload: "CARE_HELP"
-          },
-          {
-            title: i18n.__("menu.product_launch"),
-            payload: "PRODUCT_LAUNCH"
-          }
-        ])
-      ];
-    }
+    // if (
+    //   (greeting && greeting.confidence > 0.8) ||
+    //   message.includes("start over")
+    // ) {
+    //   response = Response.genNuxMessage(this.user);
+    // } else if (Number(message)) {
+    //   response = Order.handlePayload("ORDER_NUMBER");
+    // } else if (message.includes("#")) {
+    //   response = Survey.handlePayload("CSAT_SUGGESTION");
+    // } else if (message.includes(i18n.__("care.help").toLowerCase())) {
+    //   let care = new Care(this.user, this.webhookEvent);
+    //   response = care.handlePayload("CARE_HELP");
+    // } else {
+    //   response = [
+    //     Response.genText(
+    //       i18n.__("fallback.any", {
+    //         message: event.message.text
+    //       })
+    //     ),
+    //     Response.genText(i18n.__("get_started.guidance")),
+    //     Response.genQuickReply(i18n.__("get_started.help"), [
+    //       {
+    //         title: i18n.__("menu.suggestion"),
+    //         payload: "CURATION"
+    //       },
+    //       {
+    //         title: i18n.__("menu.help"),
+    //         payload: "CARE_HELP"
+    //       },
+    //       {
+    //         title: i18n.__("menu.product_launch"),
+    //         payload: "PRODUCT_LAUNCH"
+    //       }
+    //     ])
+    //   ];
+    // }
 
-    return response;
+    // return response;
   }
 
   // Handles mesage events with attachments
