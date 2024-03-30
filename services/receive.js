@@ -90,9 +90,16 @@ module.exports = class Receive {
 
     this.sendAction("mark_seen");
     this.sendAction("typing_on");
+    let elapsed = 0;
+    const intervalDuration = 3000; // Duration for each interval
+    const maxDuration = 30000;
     let intervalId = setInterval(() => {
       this.sendAction("typing_on");
-    }, 3000);
+      elapsed += intervalDuration;
+      if (elapsed > maxDuration) {
+        clearInterval(intervalId);
+      }
+    }, intervalDuration);
 
     Bot.chat(process.env.TENANT, this.user.psid, message).then(
       (botResponse) => {
@@ -100,10 +107,18 @@ module.exports = class Receive {
         clearInterval(intervalId);
         this.sendAction("typing_off");
 
-        this.sendMessage(
-          Response.genText(botResponse.data.assistant.content),
-          this.isUserRef
-        );
+        // send url as attachment
+        const botResponseContent = botResponse.data.assistant.content;
+        const { links, removedTitleAndUrl } =
+          this.extractLinks(botResponseContent);
+
+        for (let i = 0; i < links.length; i++) {
+          this.sendMessage(
+            Response.genImageTemplate(links[i].url, links[i].title)
+          );
+        }
+
+        this.sendMessage(Response.genText(removedTitleAndUrl), this.isUserRef);
       }
     );
 
@@ -167,6 +182,36 @@ module.exports = class Receive {
     ]);
 
     return response;
+  }
+
+  // extractAllUrls(markdownText) {
+  //   // This regular expression is used to find all URL parts in the markdown
+  //   const urlPattern = /\]\((.*?)\)/g;
+
+  //   // Search for all URLs in the provided markdown text
+  //   const matches = markdownText.match(urlPattern);
+
+  //   if (matches) {
+  //     // Extract just the URL part from each match and return them
+  //     return matches.map((match) => match.slice(2, match.length - 1));
+  //   } else {
+  //     return "No URLs found in the markdown text.";
+  //   }
+  // }
+
+  extractLinks(text) {
+    const regex1 = /\n.*: !?\[([^\]]+)\]\(([^)]+)\)/g;
+    const regex2 = /!?\[([^\]]+)\]\(([^)]+)\)/g;
+    const links = [];
+    let match;
+
+    while ((match = regex2.exec(text)) !== null) {
+      links.push({ title: match[1], url: match[2] });
+    }
+
+    const removedTitleAndUrl = text.replace(regex1, "").replace(regex2, "");
+
+    return { links, removedTitleAndUrl };
   }
 
   // Handles mesage events with quick replies

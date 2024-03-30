@@ -81,7 +81,12 @@ module.exports = class Response {
             {
               title: title,
               subtitle: subtitle,
-              image_url: image_url
+              image_url: image_url,
+              default_action: {
+                type: "web_url",
+                url: image_url,
+                webview_height_ratio: "tall"
+              }
             }
           ]
         }
